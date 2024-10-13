@@ -1,16 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import VideoRecorder from "../components/VideoRecorder";
 import VideoUploader from "../components/VideoUploader";
+import { saveVideo, getVideos, deleteVideo } from "../utils/storage";
 
 function Videos() {
   const [videos, setVideos] = useState([]);
 
-  const handleVideoRecorded = (videoURL) => {
-    setVideos((prevVideos) => [...prevVideos, videoURL]);
+  useEffect(() => {
+    loadVideos();
+  }, []);
+
+  const loadVideos = async () => {
+    try {
+      const savedVideos = await getVideos();
+      setVideos(
+        savedVideos
+          .map((video) => {
+            if (!video.url) {
+              console.warn(`Video with id ${video.id} is missing a URL`);
+              return null;
+            }
+            return {
+              id: video.id || Date.now(),
+              url: video.url,
+            };
+          })
+          .filter(Boolean)
+      ); // Remove any null entries
+    } catch (error) {
+      console.error("Failed to load videos:", error);
+    }
   };
 
-  const handleVideoUploaded = (videoURL) => {
-    setVideos((prevVideos) => [...prevVideos, videoURL]);
+  const handleVideoRecorded = async (videoURL) => {
+    const newVideo = { id: Date.now(), url: videoURL };
+    await saveVideo(newVideo.id, newVideo);
+    setVideos((prevVideos) => [...prevVideos, newVideo]);
+  };
+
+  const handleVideoUploaded = async (videoURL) => {
+    const newVideo = { id: Date.now(), url: videoURL };
+    await saveVideo(newVideo.id, newVideo);
+    setVideos((prevVideos) => [...prevVideos, newVideo]);
+  };
+
+  const handleDeleteVideo = async (id) => {
+    await deleteVideo(id);
+    setVideos((prevVideos) => prevVideos.filter((video) => video.id !== id));
   };
 
   return (
@@ -29,11 +65,13 @@ function Videos() {
           <p className="text-gray-600">No videos recorded yet. Upload or record a new video!</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {videos.map((videoURL, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <video src={videoURL} controls className="w-full h-48 object-cover" />
+            {videos.map((video) => (
+              <div key={video.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                <video src={video.url} controls className="w-full h-48 object-cover" />
                 <div className="p-4">
-                  <p className="text-gray-600">Video {index + 1}</p>
+                  <button onClick={() => handleDeleteVideo(video.id)} className="text-red-500">
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}

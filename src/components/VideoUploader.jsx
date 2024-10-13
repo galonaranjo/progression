@@ -1,13 +1,19 @@
 import { useState, useRef } from "react";
 import PropTypes from "prop-types";
 
-function VideoUploader({ onVideoUploaded }) {
+function VideoUploader({ onVideoUploaded, maxSizeMB = 50 }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith("video/")) {
+      // Check if the file size exceeds the maximum allowed size
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        // 1024 * 1024 converts MB to bytes
+        alert(`File size exceeds ${maxSizeMB}MB limit. Please choose a smaller file.`);
+        return;
+      }
       setSelectedFile(file);
       onVideoUploaded(URL.createObjectURL(file));
     } else {
@@ -22,7 +28,7 @@ function VideoUploader({ onVideoUploaded }) {
   return (
     <div>
       <input type="file" accept="video/*" onChange={handleFileSelect} style={{ display: "none" }} ref={fileInputRef} />
-      <button onClick={handleUploadClick}>Upload Video</button>
+      <button onClick={handleUploadClick}>Upload Video (Max {maxSizeMB}MB)</button>
       {selectedFile && <p>Selected file: {selectedFile.name}</p>}
     </div>
   );
@@ -30,6 +36,7 @@ function VideoUploader({ onVideoUploaded }) {
 
 VideoUploader.propTypes = {
   onVideoUploaded: PropTypes.func.isRequired,
+  maxSizeMB: PropTypes.number,
 };
 
 export default VideoUploader;
