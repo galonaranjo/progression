@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import VideoRecorder from "../components/VideoRecorder";
 import VideoUploader from "../components/VideoUploader";
-import { saveVideo, getVideos, deleteVideo } from "../utils/storage";
+import VideoTrimmer from "../components/VideoTrimmer";
+import { saveVideo, getVideos, deleteVideo, updateVideo } from "../utils/storage";
 
 function Videos() {
   const [videos, setVideos] = useState([]);
+  const [trimmingVideo, setTrimmingVideo] = useState(null);
 
   useEffect(() => {
     loadVideos();
@@ -26,7 +28,7 @@ function Videos() {
             };
           })
           .filter(Boolean)
-      ); // Remove any null entries
+      );
     } catch (error) {
       console.error("Failed to load videos:", error);
     }
@@ -49,6 +51,17 @@ function Videos() {
     setVideos((prevVideos) => prevVideos.filter((video) => video.id !== id));
   };
 
+  const handleTrimVideo = (video) => {
+    setTrimmingVideo(video);
+  };
+
+  const handleTrimComplete = async (trimmedVideoURL) => {
+    const updatedVideo = { ...trimmingVideo, url: trimmedVideoURL };
+    await updateVideo(updatedVideo.id, updatedVideo);
+    setVideos((prevVideos) => prevVideos.map((video) => (video.id === updatedVideo.id ? updatedVideo : video)));
+    setTrimmingVideo(null);
+  };
+
   return (
     <div className="container mx-auto px-4">
       <h1 className="text-3xl font-bold mb-6 text-black">My Videos</h1>
@@ -68,9 +81,12 @@ function Videos() {
             {videos.map((video) => (
               <div key={video.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <video src={video.url} controls className="w-full h-48 object-cover" />
-                <div className="p-4">
+                <div className="p-4 flex justify-between">
                   <button onClick={() => handleDeleteVideo(video.id)} className="text-red-500">
                     Delete
+                  </button>
+                  <button onClick={() => handleTrimVideo(video)} className="text-blue-500">
+                    Trim
                   </button>
                 </div>
               </div>
@@ -78,6 +94,17 @@ function Videos() {
           </div>
         )}
       </div>
+
+      {trimmingVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-lg">
+            <VideoTrimmer videoUrl={trimmingVideo.url} onTrimComplete={handleTrimComplete} />
+            <button onClick={() => setTrimmingVideo(null)} className="mt-4 text-red-500">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

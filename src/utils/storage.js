@@ -17,3 +17,7 @@ export async function getVideos() {
 export async function deleteVideo(key) {
   return (await dbPromise).delete("videos", key);
 }
+
+export async function updateVideo(key, value) {
+  return (await dbPromise).put("videos", value, key);
+}
