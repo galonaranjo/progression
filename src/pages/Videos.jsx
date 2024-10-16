@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import VideoRecorder from "../components/VideoRecorder";
 import VideoUploader from "../components/VideoUploader";
-import { saveVideo, getVideos, deleteVideo } from "../utils/storage";
+import { saveVideo, getVideos, deleteVideo, clearLocalVideos } from "../utils/storage";
 import { uploadToCloudinary, getVideosFromCloudinary, deleteFromCloudinary } from "../api/cloudinaryApi";
 
 function Videos() {
@@ -24,16 +24,45 @@ function Videos() {
       // Fetch locally stored video metadata
       const localVideos = await getVideos();
 
-      // Merge Cloudinary videos with local metadata
-      const mergedVideos = cloudinaryVideos.map((cloudVideo) => {
-        const localVideo = localVideos.find((local) => local.id === cloudVideo.id);
-        return {
-          ...cloudVideo,
-          ...localVideo,
-          public_id: cloudVideo.id, // Ensure public_id is included
-        };
-      });
-      setVideos(mergedVideos);
+      // If there are no videos in Cloudinary, clear local storage
+      if (cloudinaryVideos.length === 0) {
+        console.log("No videos in Cloudinary, clearing local storage...");
+        await clearLocalVideos();
+        setVideos([]);
+      } else {
+        const cloudinaryIds = new Set(cloudinaryVideos.map((v) => v.id));
+        const localIds = new Set(localVideos.map((v) => v.id));
+
+        // Handle videos in Cloudinary but not in local storage
+        for (const cloudVideo of cloudinaryVideos) {
+          if (!localIds.has(cloudVideo.id)) {
+            console.log(`Adding missing local entry for Cloudinary video ${cloudVideo.id}`);
+            await saveVideo(cloudVideo.id, cloudVideo);
+          }
+        }
+
+        // Remove any local videos that don't exist in Cloudinary
+        for (const localVideo of localVideos) {
+          if (!cloudinaryIds.has(localVideo.id)) {
+            console.log(`Deleting local video ${localVideo.id} that doesn't exist in Cloudinary`);
+            await deleteVideo(localVideo.id);
+          }
+        }
+
+        // Fetch updated local videos after sync
+        const updatedLocalVideos = await getVideos();
+
+        // Merge Cloudinary videos with local metadata
+        const mergedVideos = cloudinaryVideos.map((cloudVideo) => {
+          const localVideo = updatedLocalVideos.find((local) => local.id === cloudVideo.id);
+          return {
+            ...cloudVideo,
+            ...localVideo,
+            public_id: cloudVideo.id,
+          };
+        });
+        setVideos(mergedVideos);
+      }
     } catch (error) {
       console.error("Failed to load videos:", error);
       setError("Failed to load videos. Please try again later.");
@@ -74,13 +103,28 @@ function Videos() {
     setDeleteError(null);
     try {
       // Delete from Cloudinary
+      console.log("Deleting from Cloudinary...");
       await deleteFromCloudinary(publicId);
 
       // Delete from local storage
+      console.log("Deleting from local storage...");
       await deleteVideo(id);
 
       // Update state
-      setVideos((prevVideos) => prevVideos.filter((video) => video.id !== id));
+      setVideos((prevVideos) => {
+        const updatedVideos = prevVideos.filter((video) => video.id !== id);
+        return updatedVideos;
+      });
+      console.log("Video deleted from state");
+
+      // If this was the last video, clear local storage
+      if (videos.length === 1) {
+        console.log("Clearing all local videos...");
+        await clearLocalVideos();
+      }
+
+      // Refresh the video list to ensure consistency
+      await loadVideos();
     } catch (error) {
       console.error("Failed to delete video:", error);
       setDeleteError(`Failed to delete video. Please try again. (Error: ${error.message})`);

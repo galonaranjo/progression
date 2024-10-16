@@ -21,3 +21,10 @@ export async function deleteVideo(key) {
 export async function updateVideo(key, value) {
   return (await dbPromise).put("videos", value, key);
 }
+
+export async function clearLocalVideos() {
+  const db = await dbPromise;
+  const tx = db.transaction("videos", "readwrite");
+  await tx.objectStore("videos").clear();
+  await tx.done;
+}
