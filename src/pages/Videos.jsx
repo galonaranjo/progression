@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import VideoRecorder from "../components/VideoRecorder";
 import VideoUploader from "../components/VideoUploader";
 import { saveVideo, getVideos, deleteVideo } from "../utils/storage";
-import { uploadToCloudinary, getVideosFromCloudinary } from "../api/cloudinaryApi";
+import { uploadToCloudinary, getVideosFromCloudinary, deleteFromCloudinary } from "../api/cloudinaryApi";
 
 function Videos() {
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
 
   useEffect(() => {
     loadVideos();
@@ -28,10 +29,10 @@ function Videos() {
         const localVideo = localVideos.find((local) => local.id === cloudVideo.id);
         return {
           ...cloudVideo,
-          ...localVideo, // This will overwrite Cloudinary data with local data if it exists
+          ...localVideo,
+          public_id: cloudVideo.id, // Ensure public_id is included
         };
       });
-
       setVideos(mergedVideos);
     } catch (error) {
       console.error("Failed to load videos:", error);
@@ -53,7 +54,7 @@ function Videos() {
       console.log("Video saved to local storage and state updated");
     } catch (error) {
       console.error("Failed to upload video:", error);
-      // Handle error (e.g., show error message to user)
+      setError("Failed to upload video. Please try again.");
     }
   };
 
@@ -65,18 +66,32 @@ function Videos() {
       setVideos((prevVideos) => [...prevVideos, newVideo]);
     } catch (error) {
       console.error("Failed to upload video:", error);
-      // Handle error (e.g., show error message to user)
+      setError("Failed to upload video. Please try again.");
     }
   };
 
-  const handleDeleteVideo = async (id) => {
-    await deleteVideo(id);
-    setVideos((prevVideos) => prevVideos.filter((video) => video.id !== id));
+  const handleDeleteVideo = async (id, publicId) => {
+    setDeleteError(null);
+    try {
+      // Delete from Cloudinary
+      await deleteFromCloudinary(publicId);
+
+      // Delete from local storage
+      await deleteVideo(id);
+
+      // Update state
+      setVideos((prevVideos) => prevVideos.filter((video) => video.id !== id));
+    } catch (error) {
+      console.error("Failed to delete video:", error);
+      setDeleteError(`Failed to delete video. Please try again. (Error: ${error.message})`);
+    }
   };
 
   return (
     <div className="container mx-auto px-4">
       <h1 className="text-3xl font-bold mb-6 text-black">My Videos</h1>
+
+      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
       <div className="mb-8">
         <h2 className="text-2xl font-semibold mb-4 text-black">Record a New Video</h2>
@@ -86,17 +101,24 @@ function Videos() {
 
       <div>
         <h2 className="text-2xl font-semibold mb-4 text-black">My Recorded Videos</h2>
-        {videos.length === 0 ? (
+        {isLoading ? (
+          <p className="text-gray-600">Loading videos...</p>
+        ) : videos.length === 0 ? (
           <p className="text-gray-600">No videos recorded yet. Upload or record a new video!</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {videos.map((video) => (
               <div key={video.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <video src={video.url} controls className="w-full h-48 object-cover" />
-                <div className="p-4 flex justify-between">
-                  <button onClick={() => handleDeleteVideo(video.id)} className="text-red-500">
+                <div className="p-4 flex justify-between items-center">
+                  <button
+                    onClick={() => handleDeleteVideo(video.id, video.public_id)}
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
                     Delete
                   </button>
+                  {deleteError && video.id === videos.find((v) => v.id === video.id)?.id && (
+                    <span className="text-red-500 text-sm">{deleteError}</span>
+                  )}
                 </div>
               </div>
             ))}

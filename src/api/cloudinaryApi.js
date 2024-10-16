@@ -68,4 +68,26 @@ export const getVideosFromCloudinary = async () => {
   }
 };
 
+export const deleteFromCloudinary = async (publicId) => {
+  try {
+    const response = await fetch("http://localhost:3001/api/delete-video", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ publicId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete video: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error deleting video from Cloudinary:", error);
+    throw error;
+  }
+};
+
 export { cld };
