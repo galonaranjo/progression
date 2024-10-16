@@ -8,14 +8,12 @@ function VideoUploader({ onVideoUploaded, maxSizeMB = 50 }) {
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith("video/")) {
-      // Check if the file size exceeds the maximum allowed size
       if (file.size > maxSizeMB * 1024 * 1024) {
-        // 1024 * 1024 converts MB to bytes
         alert(`File size exceeds ${maxSizeMB}MB limit. Please choose a smaller file.`);
         return;
       }
       setSelectedFile(file);
-      onVideoUploaded(URL.createObjectURL(file));
+      onVideoUploaded(file); // Pass the file directly instead of a URL
     } else {
       alert("Please select a valid video file.");
     }

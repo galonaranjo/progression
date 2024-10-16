@@ -46,8 +46,7 @@ function VideoRecorder({ onVideoRecorded }) {
       mediaRecorderRef.current.ondataavailable = (e) => chunks.push(e.data);
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(chunks, { type: "video/mp4" });
-        const videoURL = URL.createObjectURL(blob);
-        onVideoRecorded(videoURL);
+        onVideoRecorded(blob); // Pass the blob directly instead of a URL
       };
 
       mediaRecorderRef.current.start();

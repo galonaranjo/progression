@@ -1,30 +1,46 @@
 import { useState, useEffect } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile } from "@ffmpeg/util";
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import PropTypes from "prop-types";
 
+// Import FFmpeg core files
+import coreURL from "@ffmpeg/core/dist/esm/ffmpeg-core.js?url";
+import wasmURL from "@ffmpeg/core/dist/esm/ffmpeg-core.wasm?url";
+import workerURL from "@ffmpeg/core/dist/esm/ffmpeg-core.worker.js?url";
+
 function VideoTrimmer({ videoUrl, onTrimComplete }) {
-  const [ffmpeg] = useState(() => new FFmpeg());
+  const [ffmpeg, setFFmpeg] = useState(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(10); // Default 10 seconds
 
   useEffect(() => {
-    load();
+    const loadFFmpeg = async () => {
+      try {
+        const ffmpegInstance = new FFmpeg();
+        ffmpegInstance.on("log", ({ message }) => console.log(message));
+
+        await ffmpegInstance.load({
+          coreURL,
+          wasmURL,
+          workerURL,
+        });
+
+        setFFmpeg(ffmpegInstance);
+        setReady(true);
+      } catch (err) {
+        console.error("Failed to load FFmpeg:", err);
+        setError("Failed to load video trimmer. Please try again later.");
+      }
+    };
+
+    loadFFmpeg();
   }, []);
 
-  const load = async () => {
-    try {
-      await ffmpeg.load();
-      setReady(true);
-    } catch (err) {
-      console.error("Failed to load FFmpeg:", err);
-      setError("Failed to load video trimmer. Please try again later.");
-    }
-  };
-
   const trimVideo = async () => {
+    if (!ffmpeg) return;
+
     try {
       const inputName = "input.mp4";
       const outputName = "output.mp4";
@@ -44,7 +60,7 @@ function VideoTrimmer({ videoUrl, onTrimComplete }) {
   };
 
   if (error) return <div className="text-red-500">{error}</div>;
-  if (!ready) return <div>Loading trimmer...</div>;
+  if (!ready) return <div className="text-gray-500">Loading trimmer...</div>;
 
   return (
     <div>

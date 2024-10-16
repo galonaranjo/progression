@@ -1,65 +1,77 @@
 import { useState, useEffect } from "react";
 import VideoRecorder from "../components/VideoRecorder";
 import VideoUploader from "../components/VideoUploader";
-import VideoTrimmer from "../components/VideoTrimmer";
-import { saveVideo, getVideos, deleteVideo, updateVideo } from "../utils/storage";
+import { saveVideo, getVideos, deleteVideo } from "../utils/storage";
+import { uploadToCloudinary, getVideosFromCloudinary } from "../api/cloudinaryApi";
 
 function Videos() {
   const [videos, setVideos] = useState([]);
-  const [trimmingVideo, setTrimmingVideo] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadVideos();
   }, []);
 
   const loadVideos = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const savedVideos = await getVideos();
-      setVideos(
-        savedVideos
-          .map((video) => {
-            if (!video.url) {
-              console.warn(`Video with id ${video.id} is missing a URL`);
-              return null;
-            }
-            return {
-              id: video.id || Date.now(),
-              url: video.url,
-            };
-          })
-          .filter(Boolean)
-      );
+      // Fetch videos from Cloudinary
+      const cloudinaryVideos = await getVideosFromCloudinary();
+
+      // Fetch locally stored video metadata
+      const localVideos = await getVideos();
+
+      // Merge Cloudinary videos with local metadata
+      const mergedVideos = cloudinaryVideos.map((cloudVideo) => {
+        const localVideo = localVideos.find((local) => local.id === cloudVideo.id);
+        return {
+          ...cloudVideo,
+          ...localVideo, // This will overwrite Cloudinary data with local data if it exists
+        };
+      });
+
+      setVideos(mergedVideos);
     } catch (error) {
       console.error("Failed to load videos:", error);
+      setError("Failed to load videos. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleVideoRecorded = async (videoURL) => {
-    const newVideo = { id: Date.now(), url: videoURL };
-    await saveVideo(newVideo.id, newVideo);
-    setVideos((prevVideos) => [...prevVideos, newVideo]);
+  const handleVideoRecorded = async (videoBlob) => {
+    console.log("Video recorded, blob size:", videoBlob.size);
+    try {
+      console.log("Uploading to Cloudinary...");
+      const cloudinaryUrl = await uploadToCloudinary(videoBlob);
+      console.log("Cloudinary upload successful, URL:", cloudinaryUrl);
+      const newVideo = { id: Date.now(), url: cloudinaryUrl };
+      await saveVideo(newVideo.id, newVideo);
+      setVideos((prevVideos) => [...prevVideos, newVideo]);
+      console.log("Video saved to local storage and state updated");
+    } catch (error) {
+      console.error("Failed to upload video:", error);
+      // Handle error (e.g., show error message to user)
+    }
   };
 
-  const handleVideoUploaded = async (videoURL) => {
-    const newVideo = { id: Date.now(), url: videoURL };
-    await saveVideo(newVideo.id, newVideo);
-    setVideos((prevVideos) => [...prevVideos, newVideo]);
+  const handleVideoUploaded = async (file) => {
+    try {
+      const cloudinaryUrl = await uploadToCloudinary(file);
+      const newVideo = { id: Date.now(), url: cloudinaryUrl };
+      await saveVideo(newVideo.id, newVideo);
+      setVideos((prevVideos) => [...prevVideos, newVideo]);
+    } catch (error) {
+      console.error("Failed to upload video:", error);
+      // Handle error (e.g., show error message to user)
+    }
   };
 
   const handleDeleteVideo = async (id) => {
     await deleteVideo(id);
     setVideos((prevVideos) => prevVideos.filter((video) => video.id !== id));
-  };
-
-  const handleTrimVideo = (video) => {
-    setTrimmingVideo(video);
-  };
-
-  const handleTrimComplete = async (trimmedVideoURL) => {
-    const updatedVideo = { ...trimmingVideo, url: trimmedVideoURL };
-    await updateVideo(updatedVideo.id, updatedVideo);
-    setVideos((prevVideos) => prevVideos.map((video) => (video.id === updatedVideo.id ? updatedVideo : video)));
-    setTrimmingVideo(null);
   };
 
   return (
@@ -85,26 +97,12 @@ function Videos() {
                   <button onClick={() => handleDeleteVideo(video.id)} className="text-red-500">
                     Delete
                   </button>
-                  <button onClick={() => handleTrimVideo(video)} className="text-blue-500">
-                    Trim
-                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {trimmingVideo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-lg">
-            <VideoTrimmer videoUrl={trimmingVideo.url} onTrimComplete={handleTrimComplete} />
-            <button onClick={() => setTrimmingVideo(null)} className="mt-4 text-red-500">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
