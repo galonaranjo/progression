@@ -7,7 +7,8 @@ const dbPromise = openDB("VideoApp", 1, {
 });
 
 export async function saveVideo(key, value) {
-  return (await dbPromise).put("videos", value, key);
+  // Ensure that tags are included in the value object
+  return (await dbPromise).put("videos", { ...value, tags: value.tags || [] }, key);
 }
 
 export async function getVideos() {
@@ -19,7 +20,8 @@ export async function deleteVideo(key) {
 }
 
 export async function updateVideo(key, value) {
-  return (await dbPromise).put("videos", value, key);
+  // Ensure that tags are included in the update
+  return (await dbPromise).put("videos", { ...value, tags: value.tags || [] }, key);
 }
 
 export async function clearLocalVideos() {

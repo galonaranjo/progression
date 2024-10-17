@@ -29,7 +29,10 @@ export const uploadToCloudinary = async (file) => {
 
     const data = await response.json();
     console.log("Cloudinary response:", data);
-    return data.secure_url;
+    return {
+      id: data.public_id,
+      url: data.secure_url,
+    };
   } catch (error) {
     console.error("Error uploading to Cloudinary:", error);
     throw error;
@@ -86,6 +89,28 @@ export const deleteFromCloudinary = async (publicId) => {
     return result;
   } catch (error) {
     console.error("Error deleting video from Cloudinary:", error);
+    throw error;
+  }
+};
+
+export const updateCloudinaryTags = async (publicId, tags) => {
+  try {
+    const response = await fetch("http://localhost:3001/api/update-tags", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ publicId, tags }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update tags: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error updating tags in Cloudinary:", error);
     throw error;
   }
 };

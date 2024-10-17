@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
 import VideoRecorder from "../components/VideoRecorder";
 import VideoUploader from "../components/VideoUploader";
-import { saveVideo, getVideos, deleteVideo, clearLocalVideos } from "../utils/storage";
-import { uploadToCloudinary, getVideosFromCloudinary, deleteFromCloudinary } from "../api/cloudinaryApi";
+import VideoItem from "../components/VideoItem";
+import { saveVideo, getVideos, deleteVideo, clearLocalVideos, updateVideo } from "../utils/storage";
+import {
+  uploadToCloudinary,
+  getVideosFromCloudinary,
+  deleteFromCloudinary,
+  updateCloudinaryTags,
+} from "../api/cloudinaryApi";
 
 function Videos() {
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [deleteError, setDeleteError] = useState(null);
 
   useEffect(() => {
     loadVideos();
@@ -71,14 +76,16 @@ function Videos() {
     }
   };
 
+  // Handle video recording
+
   const handleVideoRecorded = async (videoBlob) => {
     console.log("Video recorded, blob size:", videoBlob.size);
     try {
       console.log("Uploading to Cloudinary...");
-      const cloudinaryUrl = await uploadToCloudinary(videoBlob);
-      console.log("Cloudinary upload successful, URL:", cloudinaryUrl);
-      const newVideo = { id: Date.now(), url: cloudinaryUrl };
-      await saveVideo(newVideo.id, newVideo);
+      const { id, url } = await uploadToCloudinary(videoBlob);
+      console.log("Cloudinary upload successful, ID:", id, "URL:", url);
+      const newVideo = { id, url, tags: [] }; // Initialize with empty tags array
+      await saveVideo(id, newVideo);
       setVideos((prevVideos) => [...prevVideos, newVideo]);
       console.log("Video saved to local storage and state updated");
     } catch (error) {
@@ -87,11 +94,12 @@ function Videos() {
     }
   };
 
+  // Handle video upload to Cloudinary
   const handleVideoUploaded = async (file) => {
     try {
-      const cloudinaryUrl = await uploadToCloudinary(file);
-      const newVideo = { id: Date.now(), url: cloudinaryUrl };
-      await saveVideo(newVideo.id, newVideo);
+      const { id, url } = await uploadToCloudinary(file);
+      const newVideo = { id, url };
+      await saveVideo(id, newVideo);
       setVideos((prevVideos) => [...prevVideos, newVideo]);
     } catch (error) {
       console.error("Failed to upload video:", error);
@@ -100,34 +108,57 @@ function Videos() {
   };
 
   const handleDeleteVideo = async (id, publicId) => {
-    setDeleteError(null);
     try {
-      // Delete from Cloudinary
-      console.log("Deleting from Cloudinary...");
       await deleteFromCloudinary(publicId);
-
-      // Delete from local storage
-      console.log("Deleting from local storage...");
       await deleteVideo(id);
-
-      // Update state
-      setVideos((prevVideos) => {
-        const updatedVideos = prevVideos.filter((video) => video.id !== id);
-        return updatedVideos;
-      });
-      console.log("Video deleted from state");
-
-      // If this was the last video, clear local storage
+      setVideos((prevVideos) => prevVideos.filter((video) => video.id !== id));
       if (videos.length === 1) {
-        console.log("Clearing all local videos...");
         await clearLocalVideos();
+        await loadVideos();
       }
-
-      // Refresh the video list to ensure consistency
-      await loadVideos();
     } catch (error) {
       console.error("Failed to delete video:", error);
-      setDeleteError(`Failed to delete video. Please try again. (Error: ${error.message})`);
+      setError(`Failed to delete video. Please try again. (Error: ${error.message})`);
+    }
+  };
+
+  const handleAddTag = async (videoId, newTag) => {
+    try {
+      const videoToUpdate = videos.find((v) => v.id === videoId);
+      if (!videoToUpdate) return;
+
+      const updatedTags = [...(videoToUpdate.tags || []), newTag];
+      const updatedVideo = { ...videoToUpdate, tags: updatedTags };
+
+      // Update Cloudinary
+      await updateCloudinaryTags(videoToUpdate.public_id, updatedTags);
+
+      // Update local storage and state
+      await updateVideo(videoId, updatedVideo);
+      setVideos((prevVideos) => prevVideos.map((v) => (v.id === videoId ? updatedVideo : v)));
+    } catch (error) {
+      console.error("Failed to add tag:", error);
+      setError("Failed to add tag. Please try again.");
+    }
+  };
+
+  const handleRemoveTag = async (videoId, tagToRemove) => {
+    try {
+      const videoToUpdate = videos.find((v) => v.id === videoId);
+      if (!videoToUpdate) return;
+
+      const updatedTags = (videoToUpdate.tags || []).filter((tag) => tag !== tagToRemove);
+      const updatedVideo = { ...videoToUpdate, tags: updatedTags };
+
+      // Update Cloudinary
+      await updateCloudinaryTags(videoToUpdate.public_id, updatedTags);
+
+      // Update local storage and state
+      await updateVideo(videoId, updatedVideo);
+      setVideos((prevVideos) => prevVideos.map((v) => (v.id === videoId ? updatedVideo : v)));
+    } catch (error) {
+      console.error("Failed to remove tag:", error);
+      setError("Failed to remove tag. Please try again.");
     }
   };
 
@@ -152,19 +183,13 @@ function Videos() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {videos.map((video) => (
-              <div key={video.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <video src={video.url} controls className="w-full h-48 object-cover" />
-                <div className="p-4 flex justify-between items-center">
-                  <button
-                    onClick={() => handleDeleteVideo(video.id, video.public_id)}
-                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
-                    Delete
-                  </button>
-                  {deleteError && video.id === videos.find((v) => v.id === video.id)?.id && (
-                    <span className="text-red-500 text-sm">{deleteError}</span>
-                  )}
-                </div>
-              </div>
+              <VideoItem
+                key={video.id}
+                video={video}
+                onDelete={handleDeleteVideo}
+                onAddTag={handleAddTag}
+                onRemoveTag={handleRemoveTag}
+              />
             ))}
           </div>
         )}
