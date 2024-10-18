@@ -46,7 +46,7 @@ function VideoModal({ video, onClose, onDelete, onAddTag, onRemoveTag }) {
               value={newTags}
               onChange={(e) => setNewTags(e.target.value)}
               placeholder="Add tags (comma-separated)"
-              className="border rounded px-2 py-1 mr-2"
+              className="border rounded px-2 py-1 mr-2 text-black"
             />
             <button type="submit" className="bg-blue-500 text-white px-2 py-1 rounded">
               Add Tags

@@ -87,9 +87,17 @@ function Videos() {
       console.log("Uploading to Cloudinary...");
       const { id, url, thumbnailUrl } = await uploadToCloudinary(videoBlob);
       console.log("Cloudinary upload successful, ID:", id, "URL:", url, "Thumbnail:", thumbnailUrl);
-      const newVideo = { id, url, thumbnailUrl, tags: [], public_id: id }; // Add public_id here
+      const newVideo = {
+        id,
+        url,
+        thumbnailUrl,
+        tags: [],
+        public_id: id,
+        created_on: new Date().toISOString(), // Use current time for recorded videos
+        uploaded_on: new Date().toISOString(),
+      };
       await saveVideo(id, newVideo);
-      setVideos((prevVideos) => [...prevVideos, newVideo]);
+      setVideos((prevVideos) => [newVideo, ...prevVideos]);
       console.log("Video saved to local storage and state updated");
     } catch (error) {
       console.error("Failed to upload video:", error);
@@ -100,10 +108,18 @@ function Videos() {
   // Handle video upload to Cloudinary
   const handleVideoUploaded = async (file) => {
     try {
-      const { id, url, thumbnailUrl } = await uploadToCloudinary(file);
-      const newVideo = { id, url, thumbnailUrl, tags: [], public_id: id }; // Add public_id here
+      const { id, url, thumbnailUrl, created_on, uploaded_on } = await uploadToCloudinary(file);
+      const newVideo = {
+        id,
+        url,
+        thumbnailUrl,
+        tags: [],
+        public_id: id,
+        created_on,
+        uploaded_on,
+      };
       await saveVideo(id, newVideo);
-      setVideos((prevVideos) => [...prevVideos, newVideo]);
+      setVideos((prevVideos) => [newVideo, ...prevVideos]);
     } catch (error) {
       console.error("Failed to upload video:", error);
       setError("Failed to upload video. Please try again.");

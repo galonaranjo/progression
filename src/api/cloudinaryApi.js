@@ -13,6 +13,15 @@ export const uploadToCloudinary = async (file) => {
   formData.append("file", file);
   formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
 
+  // Add the original creation date if available
+  let creationDate;
+  if (file.lastModified) {
+    creationDate = new Date(file.lastModified).toISOString();
+  } else {
+    creationDate = new Date().toISOString();
+  }
+  formData.append("context", `created_on=${creationDate}`);
+
   try {
     console.log("Sending request to Cloudinary...");
     const response = await fetch(
@@ -33,13 +42,14 @@ export const uploadToCloudinary = async (file) => {
     console.log("Cloudinary response:", data);
 
     // Generate thumbnail URL using Cloudinary's URL-based transformations
-    // Use video conversion for thumbnail generation
     const thumbnailUrl = data.secure_url.replace("/upload/", "/upload/c_thumb,w_300,h_200,f_auto/");
 
     return {
       id: data.public_id,
       url: data.secure_url,
       thumbnailUrl: thumbnailUrl,
+      created_on: creationDate,
+      uploaded_on: new Date().toISOString(),
     };
   } catch (error) {
     console.error("Error uploading to Cloudinary:", error);

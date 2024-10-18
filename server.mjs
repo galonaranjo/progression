@@ -46,7 +46,8 @@ app.get("/api/videos", async (req, res) => {
     const videos = response.data.resources.map((resource) => ({
       id: resource.public_id,
       url: resource.secure_url,
-      created_at: resource.created_at,
+      created_on: resource.context?.created_on || resource.created_at,
+      uploaded_on: resource.created_at,
       // Use video conversion for thumbnail generation
       thumbnailUrl: resource.secure_url.replace("/upload/", "/upload/c_thumb,w_300,h_200,f_auto/"),
     }));
