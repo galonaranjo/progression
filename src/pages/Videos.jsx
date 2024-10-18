@@ -9,16 +9,19 @@ import {
   deleteFromCloudinary,
   updateCloudinaryTags,
 } from "../api/cloudinaryApi";
+import AddVideoButton from "../components/AddVideoButton";
 
 function Videos() {
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     loadVideos();
   }, []);
 
+  //Loading videos from Cloudinary and syncing local storage in order to have a local backup of the videos and their tags.
   const loadVideos = async () => {
     setIsLoading(true);
     setError(null);
@@ -42,7 +45,7 @@ function Videos() {
         for (const cloudVideo of cloudinaryVideos) {
           if (!localIds.has(cloudVideo.id)) {
             console.log(`Adding missing local entry for Cloudinary video ${cloudVideo.id}`);
-            await saveVideo(cloudVideo.id, cloudVideo);
+            await saveVideo(cloudVideo.id, { ...cloudVideo, public_id: cloudVideo.id });
           }
         }
 
@@ -63,7 +66,7 @@ function Videos() {
           return {
             ...cloudVideo,
             ...localVideo,
-            public_id: cloudVideo.id,
+            public_id: cloudVideo.id, // Ensure public_id is set
           };
         });
         setVideos(mergedVideos);
@@ -82,9 +85,9 @@ function Videos() {
     console.log("Video recorded, blob size:", videoBlob.size);
     try {
       console.log("Uploading to Cloudinary...");
-      const { id, url } = await uploadToCloudinary(videoBlob);
-      console.log("Cloudinary upload successful, ID:", id, "URL:", url);
-      const newVideo = { id, url, tags: [] }; // Initialize with empty tags array
+      const { id, url, thumbnailUrl } = await uploadToCloudinary(videoBlob);
+      console.log("Cloudinary upload successful, ID:", id, "URL:", url, "Thumbnail:", thumbnailUrl);
+      const newVideo = { id, url, thumbnailUrl, tags: [], public_id: id }; // Add public_id here
       await saveVideo(id, newVideo);
       setVideos((prevVideos) => [...prevVideos, newVideo]);
       console.log("Video saved to local storage and state updated");
@@ -97,8 +100,8 @@ function Videos() {
   // Handle video upload to Cloudinary
   const handleVideoUploaded = async (file) => {
     try {
-      const { id, url } = await uploadToCloudinary(file);
-      const newVideo = { id, url };
+      const { id, url, thumbnailUrl } = await uploadToCloudinary(file);
+      const newVideo = { id, url, thumbnailUrl, tags: [], public_id: id }; // Add public_id here
       await saveVideo(id, newVideo);
       setVideos((prevVideos) => [...prevVideos, newVideo]);
     } catch (error) {
@@ -122,12 +125,15 @@ function Videos() {
     }
   };
 
-  const handleAddTag = async (videoId, newTag) => {
+  const handleAddTag = async (videoId, newTags) => {
     try {
       const videoToUpdate = videos.find((v) => v.id === videoId);
       if (!videoToUpdate) return;
 
-      const updatedTags = [...new Set([...(videoToUpdate.tags || []), newTag])];
+      // Split newTags if it's a string, otherwise assume it's already an array
+      const tagsToAdd = typeof newTags === "string" ? newTags.split(",").map((tag) => tag.trim()) : newTags;
+
+      const updatedTags = [...new Set([...(videoToUpdate.tags || []), ...tagsToAdd])];
       const updatedVideo = { ...videoToUpdate, tags: updatedTags };
 
       // Update Cloudinary
@@ -137,8 +143,8 @@ function Videos() {
       await updateVideo(videoId, updatedVideo);
       setVideos((prevVideos) => prevVideos.map((v) => (v.id === videoId ? updatedVideo : v)));
     } catch (error) {
-      console.error("Failed to add tag:", error);
-      setError("Failed to add tag. Please try again.");
+      console.error("Failed to add tags:", error);
+      setError("Failed to add tags. Please try again.");
     }
   };
 
@@ -162,14 +168,30 @@ function Videos() {
     }
   };
 
+  const handleTakeVideo = () => {
+    // Implement logic to open video recorder
+  };
+
+  const handleUploadVideo = () => {
+    // Implement logic to open video uploader
+  };
+
   return (
     <div className="container mx-auto px-4">
-      <h1 className="text-3xl font-bold mb-6 text-black">My Videos</h1>
+      <div className="mb-8 mt-4 flex">
+        <input
+          type="text"
+          placeholder="Search video history..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-grow px-4 py-2 text-black rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <AddVideoButton onTakeVideo={handleTakeVideo} onUploadVideo={handleUploadVideo} />
+      </div>
 
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-black">Record a New Video</h2>
         <VideoRecorder onVideoRecorded={handleVideoRecorded} />
         <VideoUploader onVideoUploaded={handleVideoUploaded} />
       </div>

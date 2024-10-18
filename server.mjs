@@ -34,9 +34,24 @@ app.get("/api/videos", async (req, res) => {
         username: apiKey,
         password: apiSecret,
       },
+      params: {
+        max_results: 500, // Adjust as needed
+        prefix: "", // Add a prefix if you store videos in a specific folder
+        type: "upload",
+        context: true,
+        metadata: true,
+      },
     });
 
-    res.json(response.data);
+    const videos = response.data.resources.map((resource) => ({
+      id: resource.public_id,
+      url: resource.secure_url,
+      created_at: resource.created_at,
+      // Use video conversion for thumbnail generation
+      thumbnailUrl: resource.secure_url.replace("/upload/", "/upload/c_thumb,w_300,h_200,f_auto/"),
+    }));
+
+    res.json({ resources: videos });
   } catch (error) {
     console.error("Error fetching videos:", error);
     res.status(500).json({ error: "Failed to fetch videos" });
