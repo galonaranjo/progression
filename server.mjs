@@ -71,11 +71,24 @@ app.post("/api/delete-video", async (req, res) => {
 app.post("/api/update-tags", async (req, res) => {
   try {
     const { publicId, tags } = req.body;
-    const result = await cloudinary.uploader.add_tags(tags, [publicId], { resource_type: "video" });
+    // Check if tags is an array and join it into a string if it is
+    const tagsString = Array.isArray(tags) ? tags.join(",") : tags;
+    const result = await cloudinary.uploader.add_tag(tagsString, [publicId], { resource_type: "video" });
     res.json(result);
   } catch (error) {
     console.error("Error updating tags:", error);
-    res.status(500).json({ error: "Failed to update tags" });
+    res.status(500).json({ error: "Failed to update tags", details: error.message });
+  }
+});
+
+app.post("/api/clear-tags", async (req, res) => {
+  try {
+    const { publicId } = req.body;
+    const result = await cloudinary.uploader.remove_all_tags([publicId], { resource_type: "video" });
+    res.json(result);
+  } catch (error) {
+    console.error("Error clearing tags:", error);
+    res.status(500).json({ error: "Failed to clear tags", details: error.message });
   }
 });
 

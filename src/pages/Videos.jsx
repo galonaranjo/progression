@@ -127,7 +127,7 @@ function Videos() {
       const videoToUpdate = videos.find((v) => v.id === videoId);
       if (!videoToUpdate) return;
 
-      const updatedTags = [...(videoToUpdate.tags || []), newTag];
+      const updatedTags = [...new Set([...(videoToUpdate.tags || []), newTag])];
       const updatedVideo = { ...videoToUpdate, tags: updatedTags };
 
       // Update Cloudinary

@@ -95,16 +95,37 @@ export const deleteFromCloudinary = async (publicId) => {
 
 export const updateCloudinaryTags = async (publicId, tags) => {
   try {
+    // If tags is an empty array, we need to clear all tags
+    if (Array.isArray(tags) && tags.length === 0) {
+      const response = await fetch("http://localhost:3001/api/clear-tags", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ publicId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to clear tags: ${errorData.error}`);
+      }
+
+      return await response.json();
+    }
+
+    // Otherwise, proceed with updating tags as before
+    const tagsString = Array.isArray(tags) ? tags.join(",") : tags;
     const response = await fetch("http://localhost:3001/api/update-tags", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ publicId, tags }),
+      body: JSON.stringify({ publicId, tags: tagsString }),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to update tags: ${response.statusText}`);
+      const errorData = await response.json();
+      throw new Error(`Failed to update tags: ${errorData.error}`);
     }
 
     const result = await response.json();
