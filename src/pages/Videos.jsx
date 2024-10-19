@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import VideoRecorder from "../components/VideoRecorder";
-import VideoUploader from "../components/VideoUploader";
 import VideoItem from "../components/VideoItem";
 import { saveVideo, getVideos, deleteVideo, clearLocalVideos, updateVideo } from "../utils/storage";
 import {
@@ -184,14 +182,6 @@ function Videos() {
     }
   };
 
-  const handleTakeVideo = () => {
-    // Implement logic to open video recorder
-  };
-
-  const handleUploadVideo = () => {
-    // Implement logic to open video uploader
-  };
-
   return (
     <div className="container mx-auto px-4">
       <div className="mb-8 mt-4 flex">
@@ -202,24 +192,18 @@ function Videos() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-grow px-4 py-2 text-black rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <AddVideoButton onTakeVideo={handleTakeVideo} onUploadVideo={handleUploadVideo} />
+        <AddVideoButton onVideoRecorded={handleVideoRecorded} onVideoUploaded={handleVideoUploaded} />
       </div>
 
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
-      <div className="mb-8">
-        <VideoRecorder onVideoRecorded={handleVideoRecorded} />
-        <VideoUploader onVideoUploaded={handleVideoUploaded} />
-      </div>
-
-      <div>
-        <h2 className="text-2xl font-semibold mb-4 text-black">My Recorded Videos</h2>
+      <div className="mt-8">
         {isLoading ? (
           <p className="text-gray-600">Loading videos...</p>
         ) : videos.length === 0 ? (
-          <p className="text-gray-600">No videos recorded yet. Upload or record a new video!</p>
+          <p className="text-gray-600">No videos recorded yet. Upload or record a new video.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {videos.map((video) => (
               <VideoItem
                 key={video.id}

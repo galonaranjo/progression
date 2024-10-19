@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import PropTypes from "prop-types";
 
-function VideoUploader({ onVideoUploaded, maxSizeMB = 50 }) {
+function VideoUploader({ onVideoUploaded, onClose, maxSizeMB = 50 }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -13,27 +13,44 @@ function VideoUploader({ onVideoUploaded, maxSizeMB = 50 }) {
         return;
       }
       setSelectedFile(file);
-      onVideoUploaded(file); // Pass the file directly instead of a URL
     } else {
       alert("Please select a valid video file.");
     }
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current.click();
+  const handleUpload = () => {
+    if (selectedFile) {
+      onVideoUploaded(selectedFile);
+    }
   };
 
   return (
-    <div>
-      <input type="file" accept="video/*" onChange={handleFileSelect} style={{ display: "none" }} ref={fileInputRef} />
-      <button onClick={handleUploadClick}>Upload Video (Max {maxSizeMB}MB)</button>
-      {selectedFile && <p>Selected file: {selectedFile.name}</p>}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 max-w-4xl w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Upload Video</h2>
+          <button onClick={onClose} className="text-2xl">
+            &times;
+          </button>
+        </div>
+        <input type="file" accept="video/*" onChange={handleFileSelect} ref={fileInputRef} className="mb-4" />
+        {selectedFile && (
+          <div className="mb-4">
+            <p>Selected file: {selectedFile.name}</p>
+            <button onClick={handleUpload} className="bg-blue-500 text-white px-4 py-2 rounded">
+              Upload
+            </button>
+          </div>
+        )}
+        <p className="text-sm text-gray-500">Maximum file size: {maxSizeMB}MB</p>
+      </div>
     </div>
   );
 }
 
 VideoUploader.propTypes = {
   onVideoUploaded: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
   maxSizeMB: PropTypes.number,
 };
 

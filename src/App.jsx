@@ -6,9 +6,9 @@ import Videos from "./pages/Videos";
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-100">
+      <div className="bg-white">
         <Navbar />
-        <main className="container mx-auto mt-4 p-4">
+        <main className="mt-4">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/videos" element={<Videos />} />

@@ -1,8 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
+import VideoRecorder from "./VideoRecorder";
+import VideoUploader from "./VideoUploader";
 
-function AddVideoButton({ onTakeVideo, onUploadVideo }) {
+function AddVideoButton({ onVideoRecorded, onVideoUploaded }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isRecorderOpen, setIsRecorderOpen] = useState(false);
+  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -17,13 +21,23 @@ function AddVideoButton({ onTakeVideo, onUploadVideo }) {
   }, []);
 
   const handleTakeVideo = () => {
-    onTakeVideo();
+    setIsRecorderOpen(true);
     setIsDropdownOpen(false);
   };
 
   const handleUploadVideo = () => {
-    onUploadVideo();
+    setIsUploaderOpen(true);
     setIsDropdownOpen(false);
+  };
+
+  const handleVideoRecorded = (blob) => {
+    onVideoRecorded(blob);
+    setIsRecorderOpen(false);
+  };
+
+  const handleVideoUploaded = (file) => {
+    onVideoUploaded(file);
+    setIsUploaderOpen(false);
   };
 
   return (
@@ -47,13 +61,19 @@ function AddVideoButton({ onTakeVideo, onUploadVideo }) {
           </button>
         </div>
       )}
+      {isRecorderOpen && (
+        <VideoRecorder onVideoRecorded={handleVideoRecorded} onClose={() => setIsRecorderOpen(false)} />
+      )}
+      {isUploaderOpen && (
+        <VideoUploader onVideoUploaded={handleVideoUploaded} onClose={() => setIsUploaderOpen(false)} />
+      )}
     </div>
   );
 }
 
 AddVideoButton.propTypes = {
-  onTakeVideo: PropTypes.func.isRequired,
-  onUploadVideo: PropTypes.func.isRequired,
+  onVideoRecorded: PropTypes.func.isRequired,
+  onVideoUploaded: PropTypes.func.isRequired,
 };
 
 export default AddVideoButton;
