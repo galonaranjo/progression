@@ -24,13 +24,9 @@ function Videos() {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch videos from Cloudinary
       const cloudinaryVideos = await getVideosFromCloudinary();
-
-      // Fetch locally stored video metadata
       const localVideos = await getVideos();
 
-      // If there are no videos in Cloudinary, clear local storage
       if (cloudinaryVideos.length === 0) {
         console.log("No videos in Cloudinary, clearing local storage...");
         await clearLocalVideos();
@@ -39,11 +35,12 @@ function Videos() {
         const cloudinaryIds = new Set(cloudinaryVideos.map((v) => v.id));
         const localIds = new Set(localVideos.map((v) => v.id));
 
-        // Handle videos in Cloudinary but not in local storage
         for (const cloudVideo of cloudinaryVideos) {
-          if (!localIds.has(cloudVideo.id)) {
+          if (cloudVideo.id && !localIds.has(cloudVideo.id)) {
             console.log(`Adding missing local entry for Cloudinary video ${cloudVideo.id}`);
             await saveVideo(cloudVideo.id, { ...cloudVideo, public_id: cloudVideo.id });
+          } else if (!cloudVideo.id) {
+            console.error("Encountered a video without an id:", cloudVideo);
           }
         }
 
@@ -83,15 +80,15 @@ function Videos() {
     console.log("Video recorded, blob size:", videoBlob.size);
     try {
       console.log("Uploading to Cloudinary...");
-      const { id, url, thumbnailUrl } = await uploadToCloudinary(videoBlob);
-      console.log("Cloudinary upload successful, ID:", id, "URL:", url, "Thumbnail:", thumbnailUrl);
+      const { id, url, thumbnailUrl, tags } = await uploadToCloudinary(videoBlob);
+      console.log("Cloudinary upload successful, ID:", id, "URL:", url, "Thumbnail:", thumbnailUrl, "Tags:", tags);
       const newVideo = {
         id,
         url,
         thumbnailUrl,
-        tags: [],
+        tags, // Use the tags from Cloudinary, which include auto-generated tags
         public_id: id,
-        created_on: new Date().toISOString(), // Use current time for recorded videos
+        created_on: new Date().toISOString(),
         uploaded_on: new Date().toISOString(),
       };
       await saveVideo(id, newVideo);
@@ -106,12 +103,13 @@ function Videos() {
   // Handle video upload to Cloudinary
   const handleVideoUploaded = async (file) => {
     try {
-      const { id, url, thumbnailUrl, created_on, uploaded_on } = await uploadToCloudinary(file);
+      const { id, url, thumbnailUrl, created_on, uploaded_on, tags } = await uploadToCloudinary(file);
+      console.log("Uploaded video data:", { id, url, thumbnailUrl, created_on, uploaded_on, tags });
       const newVideo = {
         id,
         url,
         thumbnailUrl,
-        tags: [],
+        tags,
         public_id: id,
         created_on,
         uploaded_on,

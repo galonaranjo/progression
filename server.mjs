@@ -48,8 +48,11 @@ app.get("/api/videos", async (req, res) => {
       url: resource.secure_url,
       created_on: resource.context?.created_on || resource.created_at,
       uploaded_on: resource.created_at,
-      // Use video conversion for thumbnail generation
-      thumbnailUrl: resource.secure_url.replace("/upload/", "/upload/c_thumb,w_300,h_200,f_auto/"),
+      thumbnailUrl: cloudinary.url(resource.public_id, {
+        resource_type: "video",
+        transformation: [{ width: 300, height: 200, crop: "thumb" }, { format: "jpg" }],
+      }),
+      tags: resource.tags || [],
     }));
 
     res.json({ resources: videos });

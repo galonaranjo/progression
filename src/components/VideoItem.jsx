@@ -1,6 +1,14 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
 import VideoModal from "./VideoModal";
+import { Cloudinary } from "@cloudinary/url-gen";
+import { thumbnail } from "@cloudinary/url-gen/actions/resize";
+
+const cld = new Cloudinary({
+  cloud: {
+    cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
+  },
+});
 
 function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
   const [thumbnailError, setThumbnailError] = useState(false);
@@ -9,6 +17,9 @@ function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
   const handleThumbnailError = () => {
     setThumbnailError(true);
   };
+
+  // Generate thumbnail URL here
+  const thumbnailUrl = cld.video(video.id).resize(thumbnail().width(300).height(200)).format("jpg").toURL();
 
   return (
     <>
@@ -19,7 +30,7 @@ function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
           </div>
         ) : (
           <img
-            src={video.thumbnailUrl}
+            src={thumbnailUrl}
             alt="Video thumbnail"
             className="w-full h-32 object-cover rounded-lg"
             onError={handleThumbnailError}
@@ -54,7 +65,6 @@ VideoItem.propTypes = {
   video: PropTypes.shape({
     id: PropTypes.string.isRequired,
     url: PropTypes.string.isRequired,
-    thumbnailUrl: PropTypes.string.isRequired,
     tags: PropTypes.arrayOf(PropTypes.string),
     public_id: PropTypes.string.isRequired,
   }).isRequired,
