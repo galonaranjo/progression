@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import VideoItem from "../components/VideoItem";
+import SearchBar from "../components/SearchBar";
+import useVideoSearch from "../hooks/useVideoSearch";
 import { saveVideo, getVideos, deleteVideo, clearLocalVideos, updateVideo } from "../utils/storage";
 import {
   uploadToCloudinary,
@@ -13,7 +15,7 @@ function Videos() {
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const { searchTerm, setSearchTerm, filteredVideos } = useVideoSearch(videos);
 
   useEffect(() => {
     loadVideos();
@@ -183,13 +185,7 @@ function Videos() {
   return (
     <div className="container mx-auto px-4">
       <div className="mb-8 mt-4 flex">
-        <input
-          type="text"
-          placeholder="Search video history..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-grow px-4 py-2 text-black rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
         <AddVideoButton onVideoRecorded={handleVideoRecorded} onVideoUploaded={handleVideoUploaded} />
       </div>
 
@@ -198,11 +194,11 @@ function Videos() {
       <div className="mt-8">
         {isLoading ? (
           <p className="text-gray-600">Loading videos...</p>
-        ) : videos.length === 0 ? (
-          <p className="text-gray-600">No videos recorded yet. Upload or record a new video.</p>
+        ) : filteredVideos.length === 0 ? (
+          <p className="text-gray-600">No videos found. Try a different search term or upload a new video.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {videos.map((video) => (
+            {filteredVideos.map((video) => (
               <VideoItem
                 key={video.id}
                 video={video}
