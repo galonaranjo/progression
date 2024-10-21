@@ -10,6 +10,7 @@ import {
   updateCloudinaryTags,
 } from "../api/cloudinaryApi";
 import AddVideoButton from "../components/AddVideoButton";
+import Masonry from "react-masonry-css";
 
 function Videos() {
   const [videos, setVideos] = useState([]);
@@ -182,9 +183,18 @@ function Videos() {
     }
   };
 
+  // Masonry breakpoints
+  const breakpointColumnsObj = {
+    default: 5,
+    1100: 4,
+    700: 3,
+    500: 2,
+  };
+
   return (
-    <div className="container mx-auto px-4">
-      <div className="mb-8 mt-4 flex">
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Video History</h1>
+      <div className="flex mb-4">
         <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
         <AddVideoButton onVideoRecorded={handleVideoRecorded} onVideoUploaded={handleVideoUploaded} />
       </div>
@@ -197,17 +207,21 @@ function Videos() {
         ) : filteredVideos.length === 0 ? (
           <p className="text-gray-600">No videos found. Try a different search term or upload a new video.</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <Masonry
+            breakpointCols={breakpointColumnsObj}
+            className="my-masonry-grid"
+            columnClassName="my-masonry-grid_column">
             {filteredVideos.map((video) => (
-              <VideoItem
-                key={video.id}
-                video={video}
-                onDelete={handleDeleteVideo}
-                onAddTag={handleAddTag}
-                onRemoveTag={handleRemoveTag}
-              />
+              <div key={video.id} className="mb-4">
+                <VideoItem
+                  video={video}
+                  onDelete={handleDeleteVideo}
+                  onAddTag={handleAddTag}
+                  onRemoveTag={handleRemoveTag}
+                />
+              </div>
             ))}
-          </div>
+          </Masonry>
         )}
       </div>
     </div>

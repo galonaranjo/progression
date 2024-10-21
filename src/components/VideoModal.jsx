@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 
 function VideoModal({ video, onClose, onDelete, onAddTag, onRemoveTag }) {
   const [newTags, setNewTags] = useState("");
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.style.height = `${window.innerHeight * 0.45}px`;
+    }
+  }, []);
 
   const handleAddTags = (e) => {
     e.preventDefault();
@@ -19,14 +26,14 @@ function VideoModal({ video, onClose, onDelete, onAddTag, onRemoveTag }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Video Player</h2>
           <button onClick={onClose} className="text-2xl">
             &times;
           </button>
         </div>
-        <video src={video.url} controls className="w-full mb-4" />
+        <video ref={videoRef} src={video.url} controls className="w-full mb-4 object-contain" />
         <div className="mb-4">
           <h3 className="text-xl font-semibold mb-2">Tags</h3>
           <div className="flex flex-wrap gap-2">
