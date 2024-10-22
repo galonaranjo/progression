@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 
 function VideoModal({ video, onClose, onDelete, onAddTag, onRemoveTag }) {
   const [newTags, setNewTags] = useState("");
+  const [isAddingTag, setIsAddingTag] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -21,22 +22,26 @@ function VideoModal({ video, onClose, onDelete, onAddTag, onRemoveTag }) {
 
       onAddTag(video.id, tagsArray);
       setNewTags("");
+      setIsAddingTag(false);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Video Player</h2>
-          <button onClick={onClose} className="text-2xl">
+        <div className="flex justify-end items-center mb-4">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold focus:outline-none">
             &times;
           </button>
         </div>
         <video ref={videoRef} src={video.url} controls className="w-full mb-4 object-contain" />
         <div className="mb-4">
-          <h3 className="text-xl font-semibold mb-2">Tags</h3>
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setIsAddingTag(!isAddingTag)}
+              className="bg-blue-500 text-white rounded-full px-3 py-1 text-sm font-semibold hover:bg-blue-600 transition-colors duration-200">
+              + Add Tag
+            </button>
             {video.tags &&
               video.tags.map((tag, index) => (
                 <span key={index} className="bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700">
@@ -46,19 +51,24 @@ function VideoModal({ video, onClose, onDelete, onAddTag, onRemoveTag }) {
                   </button>
                 </span>
               ))}
+            <div
+              className={`w-full ${
+                isAddingTag ? "h-12 opacity-100" : "h-0 opacity-0"
+              } transition-all duration-300 ease-in-out overflow-hidden`}>
+              <form onSubmit={handleAddTags} className="flex items-center mt-2">
+                <input
+                  type="text"
+                  value={newTags}
+                  onChange={(e) => setNewTags(e.target.value)}
+                  placeholder="Add tags (comma-separated)"
+                  className="border rounded px-2 py-1 mr-2 text-black flex-grow"
+                />
+                <button type="submit" className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
+                  Add
+                </button>
+              </form>
+            </div>
           </div>
-          <form onSubmit={handleAddTags} className="mt-2">
-            <input
-              type="text"
-              value={newTags}
-              onChange={(e) => setNewTags(e.target.value)}
-              placeholder="Add tags (comma-separated)"
-              className="border rounded px-2 py-1 mr-2 text-black"
-            />
-            <button type="submit" className="bg-blue-500 text-white px-2 py-1 rounded">
-              Add Tags
-            </button>
-          </form>
         </div>
         <button
           onClick={() => {

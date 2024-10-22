@@ -68,7 +68,8 @@ function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
         )}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 hover:opacity-100 transition-opacity duration-200">
+          className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 hover:opacity-100 transition-opacity duration-200 focus:outline-none hover:rounded-none"
+          style={{ transition: "none" }}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 20 20" fill="currentColor">
             <path
               fillRule="evenodd"

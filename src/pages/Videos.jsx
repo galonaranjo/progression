@@ -164,22 +164,42 @@ function Videos() {
   };
 
   const handleRemoveTag = async (videoId, tagToRemove) => {
+    console.log(`Attempting to remove tag: ${tagToRemove} from video: ${videoId}`);
     try {
       const videoToUpdate = videos.find((v) => v.id === videoId);
-      if (!videoToUpdate) return;
+      if (!videoToUpdate) {
+        console.log(`Video with id ${videoId} not found`);
+        return;
+      }
+      console.log("Video to update:", videoToUpdate);
 
       const updatedTags = (videoToUpdate.tags || []).filter((tag) => tag !== tagToRemove);
-      const updatedVideo = { ...videoToUpdate, tags: updatedTags };
+      console.log("Updated tags:", updatedTags);
 
       // Update Cloudinary
-      await updateCloudinaryTags(videoToUpdate.public_id, updatedTags);
+      console.log(`Updating Cloudinary tags for public_id: ${videoToUpdate.public_id}`);
+      const cloudinaryResponse = await updateCloudinaryTags(videoToUpdate.public_id, updatedTags);
+      console.log("Cloudinary update response:", cloudinaryResponse);
+
+      // Use the tags returned from Cloudinary, or fall back to our updated tags if not provided
+      const finalTags = cloudinaryResponse.tags || updatedTags;
 
       // Update local storage and state
+      const updatedVideo = { ...videoToUpdate, tags: finalTags };
+      console.log(`Updating local storage for video: ${videoId}`);
       await updateVideo(videoId, updatedVideo);
-      setVideos((prevVideos) => prevVideos.map((v) => (v.id === videoId ? updatedVideo : v)));
+
+      console.log("Updating state");
+      setVideos((prevVideos) => {
+        const newVideos = prevVideos.map((v) => (v.id === videoId ? updatedVideo : v));
+        console.log("New videos state:", newVideos);
+        return newVideos;
+      });
+
+      console.log("Tag removal process completed successfully");
     } catch (error) {
       console.error("Failed to remove tag:", error);
-      setError("Failed to remove tag. Please try again.");
+      setError(`Failed to remove tag: ${error.message}`);
     }
   };
 
@@ -192,8 +212,7 @@ function Videos() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Video History</h1>
+    <div className="container mx-auto px-4 py-8 max-w-[1024px]">
       <div className="flex mb-4">
         <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
         <AddVideoButton onVideoRecorded={handleVideoRecorded} onVideoUploaded={handleVideoUploaded} />

@@ -90,24 +90,50 @@ app.post("/api/delete-video", async (req, res) => {
 app.post("/api/update-tags", async (req, res) => {
   try {
     const { publicId, tags } = req.body;
-    // Check if tags is an array and join it into a string if it is
-    const tagsString = Array.isArray(tags) ? tags.join(",") : tags;
-    const result = await cloudinary.uploader.add_tag(tagsString, [publicId], { resource_type: "video" });
-    res.json(result);
+    console.log(`Received request to update tags for ${publicId}:`, tags);
+
+    let result;
+    if (tags.length === 0) {
+      console.log(`Removing all tags for ${publicId}`);
+      result = await cloudinary.uploader.remove_all_tags(publicId, { resource_type: "video" });
+    } else {
+      console.log(`Replacing tags for ${publicId} with:`, tags);
+      result = await cloudinary.uploader.replace_tag(tags, publicId, { resource_type: "video" });
+    }
+    console.log("Cloudinary update tags response:", result);
+
+    // Fetch updated resource
+    const updatedResource = await cloudinary.api.resource(publicId, { resource_type: "video" });
+    console.log("Updated resource:", updatedResource);
+
+    res.json({ result, tags: updatedResource.tags || [] });
   } catch (error) {
     console.error("Error updating tags:", error);
-    res.status(500).json({ error: "Failed to update tags", details: error.message });
+    console.error("Error stack:", error.stack);
+    res.status(500).json({
+      error: "Failed to update tags",
+      details: error.message,
+      stack: error.stack,
+      cloudinaryError: error.error ? error.error : undefined,
+    });
   }
 });
 
 app.post("/api/clear-tags", async (req, res) => {
   try {
     const { publicId } = req.body;
-    const result = await cloudinary.uploader.remove_all_tags([publicId], { resource_type: "video" });
-    res.json(result);
+    console.log(`Removing all tags for ${publicId}`);
+    const result = await cloudinary.uploader.remove_all_tags(publicId, { resource_type: "video" });
+    console.log("Cloudinary remove all tags response:", result);
+
+    // Fetch updated resource
+    const updatedResource = await cloudinary.api.resource(publicId, { resource_type: "video" });
+    console.log("Updated resource:", updatedResource);
+
+    res.json({ result, tags: updatedResource.tags });
   } catch (error) {
     console.error("Error clearing tags:", error);
-    res.status(500).json({ error: "Failed to clear tags", details: error.message });
+    res.status(500).json({ error: "Failed to clear tags", details: error.message, stack: error.stack });
   }
 });
 
