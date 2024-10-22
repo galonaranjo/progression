@@ -15,7 +15,7 @@ function VideoRecorder({ onVideoRecorded, onClose }) {
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []);
+  }, [stream]); // Add stream to the dependency array
 
   const initializeCamera = async () => {
     try {
