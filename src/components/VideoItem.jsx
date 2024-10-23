@@ -82,7 +82,11 @@ function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
       <video ref={videoRef} src={video.url} style={{ display: "none" }} />
       {isModalOpen && (
         <VideoModal
-          video={video}
+          video={{
+            ...video,
+            width: videoRef.current ? videoRef.current.videoWidth : undefined,
+            height: videoRef.current ? videoRef.current.videoHeight : undefined,
+          }}
           onClose={() => setIsModalOpen(false)}
           onDelete={onDelete}
           onAddTag={onAddTag}

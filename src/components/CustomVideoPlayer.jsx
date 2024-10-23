@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 
-function CustomVideoPlayer({ src }) {
+function CustomVideoPlayer({ src, width, height }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -51,9 +51,22 @@ function CustomVideoPlayer({ src }) {
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
+  const aspectRatio = width && height ? width / height : 16 / 9;
+  const isPortrait = aspectRatio < 1;
+
   return (
-    <div className="relative">
-      <video ref={videoRef} src={src} className="w-full rounded-lg shadow-lg" onClick={togglePlay} />
+    <div
+      className="relative w-full"
+      style={{
+        maxHeight: "70vh",
+        aspectRatio: isPortrait ? "9 / 16" : "16 / 9",
+      }}>
+      <video
+        ref={videoRef}
+        src={src}
+        className="w-full h-full object-contain rounded-lg shadow-lg"
+        onClick={togglePlay}
+      />
       <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2">
         <div className="flex items-center justify-between mb-2">
           <button onClick={togglePlay} className="focus:outline-none">
@@ -63,7 +76,7 @@ function CustomVideoPlayer({ src }) {
                 className="h-6 w-6"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="black">
+                stroke="white">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -77,7 +90,7 @@ function CustomVideoPlayer({ src }) {
                 className="h-6 w-6"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="black">
+                stroke="white">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -130,6 +143,8 @@ function CustomVideoPlayer({ src }) {
 
 CustomVideoPlayer.propTypes = {
   src: PropTypes.string.isRequired,
+  width: PropTypes.number,
+  height: PropTypes.number,
 };
 
 export default CustomVideoPlayer;
