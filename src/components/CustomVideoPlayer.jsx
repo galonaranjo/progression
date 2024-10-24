@@ -6,31 +6,45 @@ function CustomVideoPlayer({ src, width, height }) {
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(1);
   const [duration, setDuration] = useState(0);
+  const [isPortrait, setIsPortrait] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState("16 / 9");
   const videoRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const video = videoRef.current;
-    video.addEventListener("loadedmetadata", () => setDuration(video.duration));
+    const handleLoadedMetadata = () => {
+      setDuration(video.duration);
+      const videoIsPortrait = video.videoHeight > video.videoWidth;
+      setIsPortrait(videoIsPortrait);
+      setAspectRatio(videoIsPortrait ? "9 / 16" : "16 / 9");
+    };
+
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
     video.addEventListener("timeupdate", updateProgress);
+
     return () => {
-      video.removeEventListener("loadedmetadata", () => setDuration(video.duration));
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
       video.removeEventListener("timeupdate", updateProgress);
     };
   }, []);
 
-  const togglePlay = () => {
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
+  const updateProgress = () => {
+    if (videoRef.current) {
+      const progress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      setProgress(progress);
     }
-    setIsPlaying(!isPlaying);
   };
 
-  const updateProgress = () => {
-    const video = videoRef.current;
-    const progress = (video.currentTime / video.duration) * 100;
-    setProgress(progress);
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const seek = (e) => {
@@ -51,15 +65,13 @@ function CustomVideoPlayer({ src, width, height }) {
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  const aspectRatio = width && height ? width / height : 16 / 9;
-  const isPortrait = aspectRatio < 1;
-
   return (
     <div
-      className="relative w-full"
+      ref={containerRef}
+      className="relative w-full mx-auto"
       style={{
-        maxHeight: "70vh",
-        aspectRatio: isPortrait ? "9 / 16" : "16 / 9",
+        maxHeight: "45vh",
+        aspectRatio: aspectRatio,
       }}>
       <video
         ref={videoRef}

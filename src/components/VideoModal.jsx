@@ -27,9 +27,11 @@ function VideoModal({ video, onClose, onDelete, onAddTag, onRemoveTag }) {
             &times;
           </button>
         </div>
-        <div className="flex-grow overflow-y-auto">
-          <CustomVideoPlayer src={video.url} width={video.width} height={video.height} />
-          <div className="mt-4">
+        <div className="flex-grow overflow-hidden flex flex-col">
+          <div className="flex-grow flex items-center justify-center">
+            <CustomVideoPlayer src={video.url} />
+          </div>
+          <div className="mt-4 overflow-y-auto">
             <div className="flex flex-wrap gap-2 mb-2">
               <button
                 onClick={() => setIsAddingTag(!isAddingTag)}
