@@ -1,50 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import PropTypes from "prop-types";
 import VideoModal from "./VideoModal";
-import { Cloudinary } from "@cloudinary/url-gen";
-import { thumbnail } from "@cloudinary/url-gen/actions/resize";
 
-const cld = new Cloudinary({
-  cloud: {
-    cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
-  },
-});
-
-function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
+function VideoItem({ video }) {
   const [thumbnailError, setThumbnailError] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isPortrait, setIsPortrait] = useState(false);
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    const checkOrientation = () => {
-      if (videoRef.current) {
-        setIsPortrait(videoRef.current.videoHeight > videoRef.current.videoWidth);
-      }
-    };
-
-    const videoElement = videoRef.current;
-    videoElement.addEventListener("loadedmetadata", checkOrientation);
-
-    return () => {
-      videoElement.removeEventListener("loadedmetadata", checkOrientation);
-    };
-  }, [video.url]);
 
   const handleThumbnailError = () => {
     setThumbnailError(true);
   };
 
-  // Generate thumbnail URL here
-  const thumbnailUrl = cld
-    .video(video.id)
-    .resize(
-      thumbnail()
-        .width(300)
-        .height(isPortrait ? 500 : 200)
-    )
-    .format("jpg")
-    .toURL();
+  // YouTube thumbnail URL
+  const thumbnailUrl = `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`;
 
   return (
     <div className="flex flex-col h-full">
@@ -54,13 +21,10 @@ function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
             <span className="text-gray-500">Thumbnail unavailable</span>
           </div>
         ) : (
-          <div
-            className={`w-full h-full relative overflow-hidden rounded-lg ${
-              isPortrait ? "aspect-[9/16]" : "aspect-[16/9]"
-            }`}>
+          <div className="w-full h-full relative overflow-hidden rounded-lg aspect-video">
             <img
               src={thumbnailUrl}
-              alt="Video thumbnail"
+              alt={video.title}
               className="absolute inset-0 w-full h-full object-cover"
               onError={handleThumbnailError}
             />
@@ -79,20 +43,11 @@ function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
           </svg>
         </button>
       </div>
-      <video ref={videoRef} src={video.url} style={{ display: "none" }} />
-      {isModalOpen && (
-        <VideoModal
-          video={{
-            ...video,
-            width: videoRef.current ? videoRef.current.videoWidth : undefined,
-            height: videoRef.current ? videoRef.current.videoHeight : undefined,
-          }}
-          onClose={() => setIsModalOpen(false)}
-          onDelete={onDelete}
-          onAddTag={onAddTag}
-          onRemoveTag={onRemoveTag}
-        />
-      )}
+      <div className="mt-2">
+        <h3 className="text-sm font-semibold">{video.title}</h3>
+        <p className="text-xs text-gray-500">{video.channelTitle}</p>
+      </div>
+      {isModalOpen && <VideoModal video={video} onClose={() => setIsModalOpen(false)} />}
     </div>
   );
 }
@@ -100,13 +55,17 @@ function VideoItem({ video, onDelete, onAddTag, onRemoveTag }) {
 VideoItem.propTypes = {
   video: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    url: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    thumbnailUrl: PropTypes.string,
+    publishedAt: PropTypes.string,
+    channelTitle: PropTypes.string,
+    channelId: PropTypes.string,
+    position: PropTypes.number,
+    privacyStatus: PropTypes.string,
+    duration: PropTypes.string,
     tags: PropTypes.arrayOf(PropTypes.string),
-    public_id: PropTypes.string.isRequired,
   }).isRequired,
-  onDelete: PropTypes.func.isRequired,
-  onAddTag: PropTypes.func.isRequired,
-  onRemoveTag: PropTypes.func.isRequired,
 };
 
 export default VideoItem;
